@@ -3,6 +3,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Brand Theme Colors */
+  --brand-primary: #1F545C;
+  --brand-secondary: #E24444;
+  --brand-accent: #FEBA2E;
 }
 
 @theme inline {
@@ -10,6 +15,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-accent: var(--brand-accent);
 }
 
 @media (prefers-color-scheme: dark) {

@@ -47,7 +47,7 @@ export function LogoSelector({ logos, isGenerating, selectedLogo, onSelect }: Lo
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <AnimatePresence>
           {showSkeletons
             ? items.map((_, i) => (
@@ -68,8 +68,8 @@ export function LogoSelector({ logos, isGenerating, selectedLogo, onSelect }: Lo
                     onClick={() => onSelect(logo, i)}
                     className={`relative w-full aspect-square rounded-xl overflow-hidden border-2 transition-all ${
                       isSelected
-                        ? 'border-indigo-500 shadow-[0_0_0_4px_rgba(99,102,241,0.2)]'
-                        : 'border-slate-200 hover:border-indigo-300'
+                        ? 'border-brand-primary shadow-[0_0_0_4px_rgba(31,84,92,0.2)]'
+                        : 'border-slate-200 hover:border-brand-primary/50'
                     }`}
                   >
                     <img
@@ -81,7 +81,7 @@ export function LogoSelector({ logos, isGenerating, selectedLogo, onSelect }: Lo
                       <motion.div
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="absolute top-1.5 right-1.5 bg-indigo-500 rounded-full p-0.5"
+                        className="absolute top-1.5 right-1.5 bg-brand-primary rounded-full p-0.5"
                       >
                         <CheckCircle size={14} className="text-white" />
                       </motion.div>

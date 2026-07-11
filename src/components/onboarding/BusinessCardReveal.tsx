@@ -98,7 +98,7 @@ export function BusinessCardReveal({
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-3"
                 style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-primary" />
                 {businessCategory}
               </motion.div>
             )}

@@ -32,6 +32,7 @@ Products: ${products}
 
 The logo must be a clean, distinct brand icon isolated on a solid white background. It should NOT be a scene, photograph, or banner.
 CRITICAL: The logo MUST prominently feature the exact text "${name}".
+CRITICAL: The logo MUST be perfectly square (1:1 aspect ratio). Do not generate landscape or wide images.
 The visual elements of the logo should creatively reflect what they sell (${products}) and their location vibe (${location}).
 Make each of the ${count} prompts visually distinct (e.g., one minimal geometric, one playful illustration, one elegant typography).
 

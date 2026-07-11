@@ -17,8 +17,9 @@ interface OnboardingStore {
   generatedThemes: ThemeItem[];
   selectedLogo: string | null;
   selectedTheme: ThemeItem | null;
-  isGeneratingLogos: boolean;
   isGeneratingThemes: boolean;
+  extractedThemePrompt: string | null;
+  isExtractingTheme: boolean;
   // Actions
   setCurrentState: (state: OnboardingState) => void;
   updateContext: (key: string, value: any) => Promise<void>;
@@ -30,6 +31,7 @@ interface OnboardingStore {
   setSelectedTheme: (theme: ThemeItem) => void;
   setIsGeneratingLogos: (val: boolean) => void;
   setIsGeneratingThemes: (val: boolean) => void;
+  finalizeBrandSystem: () => Promise<void>;
 }
 
 export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
@@ -42,6 +44,8 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
   selectedTheme: null,
   isGeneratingLogos: false,
   isGeneratingThemes: false,
+  extractedThemePrompt: null,
+  isExtractingTheme: false,
 
   setCurrentState: (state) => set({ currentState: state }),
 
@@ -78,4 +82,32 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
   setSelectedTheme: (theme) => set({ selectedTheme: theme }),
   setIsGeneratingLogos: (val) => set({ isGeneratingLogos: val }),
   setIsGeneratingThemes: (val) => set({ isGeneratingThemes: val }),
+  
+  finalizeBrandSystem: async () => {
+    const { selectedLogo, selectedTheme } = get();
+    if (!selectedLogo || !selectedTheme) return;
+
+    set({ isExtractingTheme: true });
+    try {
+      const { saveAsset } = await import('@/lib/db');
+      await saveAsset('logo', selectedLogo, 'image');
+      await saveAsset('theme_poster', selectedTheme.image, 'image');
+
+      const res = await fetch('/api/extract-theme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: selectedTheme.image })
+      });
+      const data = await res.json();
+      
+      if (data.prompt) {
+        set({ extractedThemePrompt: data.prompt });
+        await saveAsset('theme_design_prompt', data.prompt, 'text');
+      }
+    } catch (err) {
+      console.error('Failed to finalize brand system:', err);
+    } finally {
+      set({ isExtractingTheme: false });
+    }
+  },
 }));

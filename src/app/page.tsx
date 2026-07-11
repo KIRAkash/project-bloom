@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { Mic, MicOff, Settings } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useEffect, useState, useCallback } from 'react';
@@ -24,7 +25,7 @@ function ProgressBar({ currentState }: { currentState: string }) {
           <div
             key={step}
             className={`text-[10px] font-semibold transition-colors ${
-              i <= currentIndex ? 'text-indigo-600' : 'text-slate-300'
+              i <= currentIndex ? 'text-brand-primary' : 'text-slate-300'
             }`}
           >
             {STEP_LABELS[i]}
@@ -46,27 +47,22 @@ function ProgressBar({ currentState }: { currentState: string }) {
 // Bloom logo animation
 function BloomLogo({ pulse }: { pulse: boolean }) {
   return (
-    <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
+    <div className="relative inline-flex items-center justify-center shrink-0 p-8">
       <motion.div
-        className="absolute inset-0 rounded-[2rem] border border-slate-100"
+        className="absolute inset-0 rounded-[1.5rem] border border-slate-100"
         style={{ background: 'linear-gradient(135deg, #fff 0%, #f1f5ff 100%)' }}
         animate={{ boxShadow: pulse
-          ? ['0 0 0 0px rgba(99,102,241,0.3)', '0 0 0 16px rgba(99,102,241,0)', '0 0 0 0px rgba(99,102,241,0)']
+          ? ['0 0 0 0px rgba(31,84,92,0.3)', '0 0 0 16px rgba(31,84,92,0)', '0 0 0 0px rgba(31,84,92,0)']
           : '0 8px 30px -8px rgba(0,0,0,0.10)'
         }}
         transition={{ repeat: pulse ? Infinity : 0, duration: 2, ease: 'easeOut' }}
       />
       <motion.div
-        className="z-10 text-3xl font-extrabold flex items-center"
+        className="z-10 flex items-center justify-center p-2"
         animate={{ y: [0, -4, 0] }}
         transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }}
       >
-        <span className="mr-1">📣</span>
-        <span className="text-rose-500">B</span>
-        <span className="text-emerald-500">l</span>
-        <span className="text-teal-600">o</span>
-        <span className="text-amber-400">o</span>
-        <span className="text-sky-400">m</span>
+        <img src="/logo.png" alt="Bloom Logo" className="h-28 w-auto object-contain drop-shadow-sm" />
       </motion.div>
     </div>
   );
@@ -79,7 +75,7 @@ function Waveform({ active }: { active: boolean }) {
       {[0.6, 1, 0.7, 0.9, 0.5, 0.8, 0.6].map((h, i) => (
         <motion.div
           key={i}
-          className="w-1 rounded-full bg-indigo-500"
+          className="w-1 rounded-full bg-brand-primary"
           animate={{ scaleY: active ? [h * 0.3, h, h * 0.3] : 0.2 }}
           transition={{
             repeat: Infinity,
@@ -108,9 +104,14 @@ export default function Home() {
     setSelectedLogo,
     setSelectedTheme,
     setCurrentState,
+    finalizeBrandSystem,
+    isExtractingTheme,
+    extractedThemePrompt
   } = useOnboardingStore();
 
-  const { isRecording, toggleRecording, sendText } = useVoiceAgent();
+  const router = useRouter();
+
+  const { isRecording, toggleRecording, sendText, disconnect } = useVoiceAgent();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -130,6 +131,21 @@ export default function Home() {
     setTimeout(() => setCurrentState('COMPLETE'), 800);
   }, [setSelectedTheme, sendText, setCurrentState]);
 
+  // Finalize brand system and route to dashboard
+  useEffect(() => {
+    if (currentState === 'COMPLETE') {
+      disconnect(); // Immediately stop the voice agent
+      if (!isExtractingTheme && !extractedThemePrompt) {
+        finalizeBrandSystem();
+      } else if (!isExtractingTheme && extractedThemePrompt) {
+        // Extraction is finished, go to dashboard
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500); // give user a second to see the success state
+      }
+    }
+  }, [currentState, isExtractingTheme, extractedThemePrompt, finalizeBrandSystem, router, disconnect]);
+
   if (!isClient) return null;
 
   const isContextStage = ['CONTEXT_GATHERING', 'LOGO_ACQUISITION', 'THEME_SELECTION', 'COMPLETE'].includes(currentState);
@@ -138,13 +154,10 @@ export default function Home() {
   const isComplete = currentState === 'COMPLETE';
 
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center p-5 bg-slate-50 text-slate-900 font-sans overflow-hidden">
+    <main className="flex min-h-[100dvh] flex-col items-center p-5 bg-slate-50 text-slate-900 font-sans overflow-hidden pt-20">
       {/* Header */}
-      <header className="w-full flex justify-between items-center py-3 mb-2 max-w-md">
-        <div className="w-9 h-9 rounded-full overflow-hidden shadow-sm bg-slate-200">
-          <div className="w-full h-full bg-cover" style={{ backgroundImage: "url('https://api.dicebear.com/7.x/avataaars/svg?seed=Bloom')" }} />
-        </div>
-        <h1 className="text-xl font-bold text-indigo-950 tracking-tight">Bloom</h1>
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 z-50 flex items-center justify-between px-4 md:px-8">
+        <img src="/logo.png" alt="Bloom Logo" className="h-4 object-contain" />
         <button className="p-2 rounded-full text-slate-400 hover:bg-slate-200 transition-colors">
           <Settings size={20} />
         </button>
@@ -220,31 +233,36 @@ export default function Home() {
           {isComplete && (
             <motion.div
               key="complete"
-              initial={{ opacity: 0, scale: 0.9 }}
+              className="w-full rounded-2xl overflow-hidden shadow-lg border border-brand-primary/20"
+              initial={{ scale: 0.9, opacity: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', damping: 15 }}
-              className="w-full rounded-2xl overflow-hidden shadow-lg border border-indigo-100"
-              style={{ background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }}
             >
-              <div className="p-6 text-center text-white">
+              <div className="h-24 bg-gradient-to-r from-brand-secondary to-brand-primary relative flex items-center justify-center">
                 <motion.div
                   animate={{ rotate: [0, -10, 10, -10, 0], scale: [1, 1.2, 1] }}
                   transition={{ delay: 0.4, duration: 0.6 }}
-                  className="text-5xl mb-3"
+                  className="text-5xl"
                 >
                   🎉
                 </motion.div>
-                <h2 className="text-2xl font-extrabold mb-1">{businessContext.businessName}</h2>
-                <p className="text-indigo-200 text-sm">Your Bloom profile is ready!</p>
+              </div>
+              <div className="p-6 text-center bg-white">
+                <h2 className="text-2xl font-extrabold mb-1 text-slate-900">{businessContext.businessName}</h2>
+                <p className="text-slate-500 text-sm">
+                  {isExtractingTheme 
+                    ? '✨ Analyzing your brand style...' 
+                    : 'Your Bloom profile is ready!'}
+                </p>
                 {selectedLogo && (
-                  <div className="mt-4 w-16 h-16 mx-auto rounded-xl overflow-hidden border-2 border-white/40">
+                  <div className="mt-4 w-32 h-32 mx-auto rounded-xl overflow-hidden border-2 border-slate-100">
                     <img src={selectedLogo} alt="Selected logo" className="w-full h-full object-contain bg-white p-1" />
                   </div>
                 )}
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="mt-5 px-6 py-3 bg-white text-indigo-600 font-bold rounded-full shadow-md text-sm"
+                  className="mt-5 px-6 py-3 bg-brand-primary text-white font-bold rounded-full shadow-md text-sm"
                 >
                   Launch First Campaign 🚀
                 </motion.button>
@@ -287,8 +305,8 @@ export default function Home() {
           onClick={toggleRecording}
           className={`w-20 h-20 rounded-full shadow-lg flex items-center justify-center relative transition-colors ${
             isRecording
-              ? 'bg-rose-500 text-white'
-              : 'bg-white text-indigo-600 border border-slate-100'
+              ? 'bg-brand-secondary text-white shadow-lg shadow-brand-secondary/30 scale-110'
+              : 'bg-white text-brand-primary border border-slate-100'
           }`}
         >
           {isRecording && (

@@ -202,6 +202,7 @@ CRITICAL INSTRUCTIONS:
     isProcessing: false,
     toggleRecording,
     sendText,
+    disconnect,
     transcript: isConnected ? 'Voice active (Live API)' : ''
   };
 }

@@ -71,8 +71,8 @@ export function ThemeSelector({ themes, isGenerating, selectedTheme, onSelect }:
                     onClick={() => onSelect(theme, i)}
                     className={`relative w-full aspect-[9/16] rounded-xl overflow-hidden border-2 transition-all ${
                       isSelected
-                        ? 'border-indigo-500 shadow-[0_0_0_4px_rgba(99,102,241,0.2)]'
-                        : 'border-slate-200 hover:border-indigo-300'
+                        ? 'border-brand-primary shadow-[0_0_0_4px_rgba(31,84,92,0.2)]'
+                        : 'border-slate-200 hover:border-brand-primary/50'
                     }`}
                   >
                     <img
@@ -88,7 +88,7 @@ export function ThemeSelector({ themes, isGenerating, selectedTheme, onSelect }:
                       <motion.div
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="absolute top-2 right-2 bg-indigo-500 rounded-full p-0.5"
+                        className="absolute top-2 right-2 bg-brand-primary rounded-full p-0.5"
                       >
                         <CheckCircle size={16} className="text-white" />
                       </motion.div>
