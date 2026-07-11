@@ -5,7 +5,7 @@ const ai = new GoogleGenAI({});
 
 export async function POST(req: NextRequest) {
   try {
-    const { type, context, count = 1, referenceImage } = await req.json();
+    const { type, context, count = 1, referenceImage, feedback } = await req.json();
 
     if (!type || !context) {
       return NextResponse.json({ error: 'type and context are required' }, { status: 400 });
@@ -35,6 +35,7 @@ CRITICAL: The logo MUST prominently feature the exact text "${name}".
 CRITICAL: The logo MUST be perfectly square (1:1 aspect ratio). Do not generate landscape or wide images.
 The visual elements of the logo should creatively reflect what they sell (${products}) and their location vibe (${location}).
 Make each of the ${count} prompts visually distinct (e.g., one minimal geometric, one playful illustration, one elegant typography).
+${feedback ? `\nCRITICAL USER FEEDBACK: The user has requested the following changes to the logo. You MUST incorporate this feedback heavily into the generated prompts: "${feedback}"` : ''}
 
 Return ONLY a JSON array of objects. Each object must have a "name" (a 2-3 word title for the logo style) and a "prompt" (the image generation prompt).
 Example: 
@@ -57,6 +58,7 @@ Constraints:
 - The banners must include dummy promotional text visually integrated, such as "New Launch", "Back in Stock", or a seasonal festive offer.
 - Each banner should represent a completely different design style (e.g., festive promo, minimal modern launch, bold typography sale).
 - IMPORTANT: An image of the brand's logo will be provided to the image generator. The prompt MUST explicitly instruct the generator to treat the provided image as a logo and place it naturally within the banner (e.g. 'incorporate the provided reference image as a logo in the corner'). Do not let the logo override the entire scene.
+${feedback ? `\nCRITICAL USER FEEDBACK: The user has requested the following changes to the brand theme/style. You MUST incorporate this feedback heavily into the generated prompts: "${feedback}"` : ''}
 
 Return ONLY a JSON array of objects. Each object must have a "name" (a catchy 2-3 word title for the theme) and a "prompt" (the image generation prompt).
 Example: 

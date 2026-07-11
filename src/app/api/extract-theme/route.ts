@@ -19,17 +19,15 @@ export async function POST(req: Request) {
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
     const extractionPrompt = `
-Analyze this marketing poster and extract its core visual design system into a highly detailed, reusable prompt that can be used to generate similar posters in the future.
-Ignore the specific text or specific product being shown. Focus entirely on the generic design pattern.
+Analyze this image and extract ONLY its abstract visual design system into a highly detailed, reusable prompt that can be used to style future images.
 
-Provide a detailed description of:
-1. The exact color palette (primary, secondary, background, and accent colors).
-2. The lighting and mood (e.g., bright and airy, neon cyberpunk, soft pastel, dramatic studio lighting).
-3. The layout structure (e.g., central product focus with bold typography overlay, minimalist grid, organic flowing shapes).
-4. The art style and textures (e.g., flat vector graphics, hyper-realistic 3D render, grainy vintage photography).
-5. The typography vibe (e.g., bold sans-serif, elegant serif, playful handwritten).
+CRITICAL INSTRUCTIONS:
+- DO NOT mention any specific objects, people, products, or subjects present in the image (e.g. do not say "a woman holding a bag", "a coffee cup in the center", etc.).
+- DO NOT mention spatial relationships or layouts of elements (e.g. do not say "text on the top left", "logo in the center").
+- Focus ENTIRELY on the abstract style: color palette, mood, lighting, textures, art style, and typography vibe.
+- The output should read like a style guide modifier (e.g., "A moody, cinematic aesthetic featuring a deep navy and neon pink color palette with high contrast lighting, film grain texture, and modern minimal sans-serif typography elements.")
 
-Return ONLY the raw generic design prompt text that I can feed directly into an image generator later. Do not include any conversational filler.
+Return ONLY the raw generic design style text that I can append to an image generator prompt later. Do not include any conversational filler.
     `.trim();
 
     const response = await ai.models.generateContent({

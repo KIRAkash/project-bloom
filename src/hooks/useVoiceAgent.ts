@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
+import { useDashboardStore } from '@/store/useDashboardStore';
 import { useLiveAPI } from './useLiveAPI';
 
-export function useVoiceAgent() {
+export function useVoiceAgent(mode: 'onboarding' | 'dashboard' = 'onboarding') {
   const {
     currentState,
     setCurrentState,
@@ -16,7 +17,13 @@ export function useVoiceAgent() {
     selectedLogo,
   } = useOnboardingStore();
 
-  const systemInstruction = `
+  const {
+    themeDesignPrompt,
+    generateCampaignForEvent,
+    generateVideoCampaignForEvent
+  } = useDashboardStore();
+
+  const systemInstruction = mode === 'onboarding' ? `
 You are Bloom, a warm and friendly voice-first onboarding assistant for local Indian small business owners (MSMEs).
 The current onboarding state is: ${currentState}.
 Here is the context gathered so far: ${JSON.stringify(businessContext || {})}.
@@ -32,10 +39,28 @@ Your goals for each state:
 CRITICAL INSTRUCTIONS:
 - You MUST call "update_onboarding_state" every time you learn a new detail (businessName, businessLocation, etc.) AND when transitioning states.
 - You MUST call "generate_visuals" when entering LOGO_ACQUISITION (type="logo") and THEME_SELECTION (type="theme").
+- If the user asks for different options, or says they don't like the current designs, you MUST call "generate_visuals" again for the current state to regenerate and replace the options.
 - Keep responses short, friendly, and conversational — local Indian shopkeeper friendly language.
+` : `
+You are Bloom, a creative marketing partner for ${businessContext.businessName || 'a local business'}. 
+You are currently chatting with them on their dashboard.
+Their products/services: ${businessContext.businessProducts || 'various items'}.
+Their brand aesthetic pattern is: ${themeDesignPrompt || 'generic aesthetic'}.
+
+Your goal:
+1. Ask the user what kind of social media campaign they want to run today (e.g., a flash sale, a holiday greeting, a new product launch).
+2. Gather specific details (dates, prices, or product names to feature).
+3. Ask if they prefer a static POSTER or an animated VIDEO.
+4. Once you have all details, politely confirm with the user.
+5. Call the "trigger_custom_campaign" tool with the exact details.
+6. End the conversation playfully.
+
+CRITICAL INSTRUCTIONS:
+- Keep it brief, upbeat, and action-oriented. Do not ask too many questions. 
+- You MUST call "trigger_custom_campaign" once the user confirms what they want.
 `;
 
-  const tools = [
+  const tools = mode === 'onboarding' ? [
     {
       name: 'update_onboarding_state',
       description: 'Save newly discovered business details or advance the onboarding state.',
@@ -68,9 +93,27 @@ CRITICAL INSTRUCTIONS:
           type: {
             type: 'string',
             description: 'Either "logo" or "theme"'
+          },
+          feedback: {
+            type: 'string',
+            description: 'Any specific feedback or prompt from the user for the regeneration (e.g., "make it more colorful", "use a minimal style").'
           }
         },
         required: ['type']
+      }
+    }
+  ] : [
+    {
+      name: 'trigger_custom_campaign',
+      description: 'Trigger the generation of a custom campaign once all details are gathered.',
+      parameters: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['image', 'video'], description: "The type of campaign to generate" },
+          title: { type: 'string', description: "Catchy title for the event/promo" },
+          details: { type: 'string', description: "Details like price, dates, and products" }
+        },
+        required: ['type', 'title', 'details']
       }
     }
   ];
@@ -100,6 +143,7 @@ CRITICAL INSTRUCTIONS:
 
     if (call.name === 'generate_visuals') {
       const type = call.args?.type;
+      const feedback = call.args?.feedback;
       const name = businessContext.businessName || 'a local business';
       const category = businessContext.businessCategory || 'retail shop';
       const location = businessContext.businessLocation || 'India';
@@ -115,7 +159,8 @@ CRITICAL INSTRUCTIONS:
           body: JSON.stringify({
             type: 'logo',
             context: businessContext,
-            count: 3
+            count: 3,
+            feedback
           })
         })
           .then(async (res) => {
@@ -144,7 +189,8 @@ CRITICAL INSTRUCTIONS:
             type: 'theme',
             context: businessContext,
             count: 4,
-            referenceImage: selectedLogo
+            referenceImage: selectedLogo,
+            feedback
           })
         })
           .then(async (res) => {
@@ -164,17 +210,44 @@ CRITICAL INSTRUCTIONS:
       return { success: true, message: `${type} generation started` };
     }
 
-    return { error: `Unknown tool: ${call.name}` };
+    if (call.name === 'trigger_custom_campaign') {
+      const { type, title, details } = call.args;
+      console.log(`[VoiceAgent] 🚀 Triggering custom ${type} campaign: ${title}`);
+      
+      const customEvent = {
+        title: title || 'Custom Promo',
+        description: details || '',
+        date: { month: 'Custom', day: '' }
+      };
+
+      if (type === 'video') {
+        generateVideoCampaignForEvent(customEvent);
+      } else {
+        generateCampaignForEvent(customEvent);
+      }
+      
+      // Disconnect immediately after starting generation
+      setTimeout(() => {
+        disconnect();
+      }, 1000); // Small delay to let the AI say its final word
+      
+      return { result: "Campaign generation started. Disconnecting now." };
+    }
+
+    return { result: "success" };
   }, [
+    mode,
     currentState,
-    setCurrentState,
     updateContext,
+    setCurrentState,
     businessContext,
-    setGeneratedLogos,
-    setGeneratedThemes,
     setIsGeneratingLogos,
+    setGeneratedLogos,
     setIsGeneratingThemes,
+    setGeneratedThemes,
     selectedLogo,
+    generateCampaignForEvent,
+    generateVideoCampaignForEvent
   ]);
 
   const { isConnected, connect, disconnect, sendText } = useLiveAPI({

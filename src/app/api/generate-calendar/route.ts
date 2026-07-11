@@ -35,11 +35,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Business context is required' }, { status: 400 });
     }
 
-    const currentYear = new Date().getFullYear();
+    const currentDate = new Date().toISOString().split('T')[0];
 
     const prompt = `
 You are an expert local marketing strategist.
-Based on the following business context, generate a list of the 6 to 10 most important upcoming festivals, local events, or seasonal marketing opportunities for the next 12 months (starting from today). 
+Based on the following business context, generate a list of the 6 to 10 most important upcoming festivals, local events, or seasonal marketing opportunities for the next 12 months. 
+
+CRITICAL TIMELINE AWARENESS:
+Today's exact date is ${currentDate}. You MUST ONLY generate events that happen AFTER this date. Do not generate events that have already passed this year.
 
 CRITICAL LOCATION AWARENESS:
 If the location is in India, you MUST include highly specific regional and cultural festivals relevant to that EXACT state/city (e.g., Onam for Kerala, Ugadi for Karnataka/Andhra, Chhath for Bihar/UP, Durga Puja for Bengal, Gudi Padwa for Maharashtra, local fairs). Do not just output generic national holidays unless highly relevant.
@@ -47,8 +50,6 @@ Make sure the events are highly relevant to their specific niche and location.
 
 Business Context:
 ${JSON.stringify(businessContext, null, 2)}
-
-Current Year: ${currentYear}
 `.trim();
 
     const response = await ai.models.generateContent({
